@@ -1,161 +1,229 @@
 import numpy as np
+from typing import List, Tuple
 
-def regra_trapezio(profundidades, espacamento):
-    """
-    Calcula a área usando a Regra do Trapézio (Repetida)
-    A = (h/2) * [y0 + 2*(y1 + y2 + ... + yn-1) + yn]
-    """
-    n = len(profundidades)
-    area = (espacamento / 2) * (
-        profundidades[0] + 
-        2 * sum(profundidades[1:-1]) + 
-        profundidades[-1]
-    )
-    return area
+def imprimir_matriz(matriz: np.ndarray, nome: str = "Matriz"):
+    """Imprime a matriz de forma formatada sem notação científica."""
+    print(f"\n{nome}:")
+    print("-" * 80)
+    linhas, colunas = matriz.shape
+    for i in range(linhas):
+        linha_str = "| "
+        for j in range(colunas):
+            valor = matriz[i, j]
+            if abs(valor) < 1e-10:  # Considera valores muito pequenos como zero
+                valor = 0.0
+            linha_str += f"{valor:10.4f} "
+        linha_str += "|"
+        print(linha_str)
+    print("-" * 80)
 
-def regra_simpson_1_3(profundidades, espacamento, mostrar_aviso: bool = True):
+def eliminacao_gaussiana(A: np.ndarray, b: np.ndarray, mostrar_passos: bool = True) -> np.ndarray:
     """
-    Calcula a área usando a Regra de Simpson 1/3 (Repetida)
-    A = (h/3) * [y0 + 4*(y1+y3+y5+...) + 2*(y2+y4+y6+...) + yn]
-    Requer número ímpar de pontos (número par de intervalos)
-    """
-    n = len(profundidades)
+    Resolve um sistema linear Ax = b usando eliminação gaussiana com pivoteamento parcial.
     
-    if n % 2 == 0:
-        if mostrar_aviso:
-            print("AVISO: Regra de Simpson 1/3 requer número ímpar de pontos.")
-            print("Aplicando Simpson 1/3 até o penúltimo ponto e Trapézio no último intervalo.\n")
+    Args:
+        A: Matriz de coeficientes (n x n)
+        b: Vetor de termos independentes (n x 1)
+        mostrar_passos: Se True, mostra os passos intermediários
+    
+    Returns:
+        Vetor solução x
+    """
+    n = len(b)
+    # Cria matriz aumentada [A|b]
+    Ab = np.column_stack([A.astype(float), b.astype(float)])
+    
+    if mostrar_passos:
+        print("\n" + "="*80)
+        print("MÉTODO DE ELIMINAÇÃO GAUSSIANA")
+        print("="*80)
+        imprimir_matriz(Ab, "Matriz Aumentada Inicial [A|b]")
+    
+    # Fase de eliminação
+    for k in range(n-1):
+        # Pivoteamento parcial
+        max_idx = k
+        for i in range(k+1, n):
+            if abs(Ab[i, k]) > abs(Ab[max_idx, k]):
+                max_idx = i
         
-        # Simpson 1/3 até n-2
-        soma_impares = sum(profundidades[i] for i in range(1, n-2, 2))
-        soma_pares = sum(profundidades[i] for i in range(2, n-2, 2))
-        area_simpson = (espacamento / 3) * (
-            profundidades[0] + 
-            4 * soma_impares + 
-            2 * soma_pares + 
-            profundidades[n-2]
-        )
+        if max_idx != k:
+            Ab[[k, max_idx]] = Ab[[max_idx, k]]
+            if mostrar_passos:
+                print(f"\nTroca de linhas {k+1} ↔ {max_idx+1} (pivoteamento)")
+                imprimir_matriz(Ab, f"Após pivoteamento na etapa {k+1}")
         
-        # Trapézio no último intervalo
-        area_trapezio = espacamento * (profundidades[n-2] + profundidades[n-1]) / 2
+        # Eliminação
+        for i in range(k+1, n):
+            if Ab[k, k] != 0:
+                fator = Ab[i, k] / Ab[k, k]
+                Ab[i, k:] = Ab[i, k:] - fator * Ab[k, k:]
+                
+                if mostrar_passos:
+                    print(f"\nEliminando elemento ({i+1},{k+1}): L{i+1} = L{i+1} - ({fator:.4f}) * L{k+1}")
         
-        return area_simpson + area_trapezio
-    else:
-        soma_impares = sum(profundidades[i] for i in range(1, n-1, 2))
-        soma_pares = sum(profundidades[i] for i in range(2, n-1, 2))
+        if mostrar_passos and k < n-2:
+            imprimir_matriz(Ab, f"Matriz após eliminação na coluna {k+1}")
+    
+    if mostrar_passos:
+        imprimir_matriz(Ab, "Matriz Triangular Superior Final")
+    
+    # Substituição retroativa
+    x = np.zeros(n)
+    
+    if mostrar_passos:
+        print("\n" + "="*80)
+        print("SUBSTITUIÇÃO RETROATIVA")
+        print("="*80)
+    
+    for i in range(n-1, -1, -1):
+        soma = 0
+        for j in range(i+1, n):
+            soma += Ab[i, j] * x[j]
         
-        area = (espacamento / 3) * (
-            profundidades[0] + 
-            4 * soma_impares + 
-            2 * soma_pares + 
-            profundidades[-1]
-        )
-        return area
+        if Ab[i, i] == 0:
+            raise ValueError(f"Sistema impossível ou indeterminado: pivô zero na linha {i+1}")
+        
+        x[i] = (Ab[i, n] - soma) / Ab[i, i]
+        
+        if mostrar_passos:
+            print(f"\nx[{i+1}] = ({Ab[i, n]:.4f} - {soma:.4f}) / {Ab[i, i]:.4f} = {x[i]:.4f}")
+    
+    return x
 
-def imprimir_resultados(profundidades, distancias, espacamento, area_trapezio, area_simpson):
-    """Imprime os resultados formatados"""
-    print("\n" + "="*70)
-    print("DADOS DE ENTRADA")
-    print("="*70)
-    print(f"{'Ponto':<8} {'Distância (m)':<18} {'Profundidade (m)':<20}")
-    print("-"*70)
-    for i, (dist, prof) in enumerate(zip(distancias, profundidades)):
-        print(f"{i:<8} {dist:<18.2f} {prof:<20.2f}")
+def criar_sistema_mineracao(necessidades: List[float], composicao: List[List[float]]) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Cria o sistema de equações lineares para o problema de mineração.
     
-    print(f"\nEspaçamento entre pontos: {espacamento:.2f} m")
-    print(f"Número de pontos: {len(profundidades)}")
-    print(f"Número de intervalos: {len(profundidades)-1}")
+    Args:
+        necessidades: [areia, cascalho_fino, cascalho_grosso] em m³
+        composicao: [[%areia_mina1, %cfino_mina1, %cgrosso_mina1], ...]
     
-    print("\n" + "="*70)
-    print("RESULTADOS")
-    print("="*70)
-    print(f"Área pela Regra do Trapézio:        {area_trapezio:.4f} m²")
-    print(f"Área pela Regra de Simpson 1/3:     {area_simpson:.4f} m²")
-    print(f"Diferença entre os métodos:         {abs(area_trapezio - area_simpson):.4f} m²")
-    print(f"Diferença percentual:               {abs(area_trapezio - area_simpson)/area_simpson*100:.2f}%")
-    print("="*70)
+    Returns:
+        Tupla (A, b) onde A é a matriz de coeficientes e b o vetor de necessidades
+    """
+    # Converte porcentagens para frações
+    A = np.array(composicao) / 100.0
+    A = A.T  # Transpõe para ter materiais nas linhas e minas nas colunas
+    b = np.array(necessidades)
+    
+    return A, b
+
+def verificar_solucao(A: np.ndarray, b: np.ndarray, x: np.ndarray) -> None:
+    """Verifica se a solução encontrada está correta."""
+    resultado = A @ x
+    print("\n" + "="*80)
+    print("VERIFICAÇÃO DA SOLUÇÃO")
+    print("="*80)
+    print("\nQuantidades obtidas vs. necessárias:")
+    materiais = ["Areia", "Cascalho Fino", "Cascalho Grosso"]
+    
+    for i, material in enumerate(materiais):
+        print(f"{material:20s}: {resultado[i]:10.4f} m³ (necessário: {b[i]:10.4f} m³)")
+        erro = abs(resultado[i] - b[i])
+        print(f"{'':20s}  Erro: {erro:.6f} m³")
 
 def main():
-    print("="*70)
-    print("CÁLCULO DE ÁREA DA SEÇÃO RETA DE RIOS E LAGOS")
-    print("Métodos: Regra do Trapézio e Regra de Simpson 1/3 (Repetida)")
-    print("="*70)
+    print("="*80)
+    print("SISTEMA DE RESOLUÇÃO DE PROBLEMAS DE MINERAÇÃO")
+    print("Método: Eliminação Gaussiana")
+    print("="*80)
     
-    print("\nEscolha uma opção:")
-    print("1 - Usar dados do exemplo da figura")
-    print("2 - Inserir dados manualmente")
+    # Dados do problema original
+    print("\n--- PROBLEMA ORIGINAL ---")
+    necessidades_original = [4800, 5800, 5700]  # areia, cascalho fino, cascalho grosso
+    composicao_original = [
+        [55, 30, 15],  # Mina 1: %areia, %cascalho_fino, %cascalho_grosso
+        [25, 45, 30],  # Mina 2
+        [25, 20, 55]   # Mina 3
+    ]
     
-    opcao = input("\nOpção: ").strip()
+    print("\nNecessidades do engenheiro:")
+    print(f"  Areia:           {necessidades_original[0]:8.2f} m³")
+    print(f"  Cascalho Fino:   {necessidades_original[1]:8.2f} m³")
+    print(f"  Cascalho Grosso: {necessidades_original[2]:8.2f} m³")
     
-    if opcao == "1":
-        # Dados do exemplo da figura (conforme tabela fornecida)
-        # Ponto i | x_i (m) | Profundidade y_i (m)
-        #    0    |    0    |    0
-        #    1    |    2    |    1.8
-        #    2    |    4    |    2.0
-        #    3    |    6    |    4.0
-        #    4    |    8    |    4.0
-        #    5    |   10    |    6.0
-        #    6    |   12    |    4.0
-        #    7    |   14    |    3.6
-        #    8    |   16    |    3.4
-        #    9    |   18    |    2.8
-        #   10    |   20    |    0
+    print("\nComposição das minas:")
+    print("       Areia  C.Fino  C.Grosso")
+    for i, comp in enumerate(composicao_original):
+        print(f"Mina {i+1}:  {comp[0]:3d}%    {comp[1]:3d}%      {comp[2]:3d}%")
+    
+    # Resolver problema original
+    A, b = criar_sistema_mineracao(necessidades_original, composicao_original)
+    
+    print("\n\nSISTEMA DE EQUAÇÕES LINEARES:")
+    print("-" * 80)
+    print("Seja x1, x2, x3 as quantidades a minerar de cada mina (em m³):")
+    print()
+    for i, material in enumerate(["Areia", "Cascalho Fino", "Cascalho Grosso"]):
+        eq = f"{A[i,0]:.2f}·x1 + {A[i,1]:.2f}·x2 + {A[i,2]:.2f}·x3 = {b[i]:.2f}"
+        print(f"{material:15s}: {eq}")
+    
+    try:
+        solucao = eliminacao_gaussiana(A, b, mostrar_passos=True)
         
-        distancias_acum = np.array([0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20])
-        profundidades = np.array([0, 1.8, 2.0, 4.0, 4.0, 6.0, 4.0, 3.6, 3.4, 2.8, 0])
+        print("\n" + "="*80)
+        print("SOLUÇÃO FINAL")
+        print("="*80)
+        print("\nQuantidades a minerar de cada mina:")
+        for i, quantidade in enumerate(solucao):
+            print(f"  Mina {i+1}: {quantidade:10.4f} m³")
         
-        # Espaçamento uniforme de 2m
-        espacamento = 2.0
+        verificar_solucao(A, b, solucao)
         
-    else:
-        # Entrada manual
-        n_pontos = int(input("\nQuantidade de pontos medidos: "))
+    except Exception as e:
+        print(f"\nErro ao resolver o sistema: {e}")
+    
+    # Opção para resolver novo problema
+    print("\n" + "="*80)
+    print("RESOLVER NOVO PROBLEMA")
+    print("="*80)
+    
+    resposta = input("\nDeseja resolver um novo problema? (s/n): ").strip().lower()
+    
+    if resposta == 's':
+        print("\n--- ENTRADA DE NOVOS DADOS ---")
         
-        print("\nOs pontos estão igualmente espaçados?")
-        print("1 - Sim")
-        print("2 - Não")
-        espacamento_igual = input("Opção: ").strip()
+        # Entrada de necessidades
+        print("\nDigite as necessidades (em m³):")
+        areia = float(input("  Areia: "))
+        cfino = float(input("  Cascalho Fino: "))
+        cgrosso = float(input("  Cascalho Grosso: "))
+        necessidades_nova = [areia, cfino, cgrosso]
         
-        if espacamento_igual == "1":
-            espacamento = float(input("Espaçamento entre pontos (m): "))
-            distancias_acum = np.array([i * espacamento for i in range(n_pontos)])
-        else:
-            print("\nInsira as distâncias a partir da margem esquerda:")
-            distancias_acum = []
-            for i in range(n_pontos):
-                dist = float(input(f"Distância do ponto {i} (m): "))
-                distancias_acum.append(dist)
-            distancias_acum = np.array(distancias_acum)
+        # Entrada de composições
+        print("\nDigite a composição de cada mina (em %):")
+        composicao_nova = []
+        for i in range(3):
+            print(f"\nMina {i+1}:")
+            areia_p = float(input("  % Areia: "))
+            cfino_p = float(input("  % Cascalho Fino: "))
+            cgrosso_p = float(input("  % Cascalho Grosso: "))
+            composicao_nova.append([areia_p, cfino_p, cgrosso_p])
+        
+        # Resolver novo problema
+        A_nova, b_nova = criar_sistema_mineracao(necessidades_nova, composicao_nova)
+        
+        print("\n\nNOVO SISTEMA DE EQUAÇÕES:")
+        print("-" * 80)
+        for i, material in enumerate(["Areia", "Cascalho Fino", "Cascalho Grosso"]):
+            eq = f"{A_nova[i,0]:.2f}·x1 + {A_nova[i,1]:.2f}·x2 + {A_nova[i,2]:.2f}·x3 = {b_nova[i]:.2f}"
+            print(f"{material:15s}: {eq}")
+        
+        try:
+            solucao_nova = eliminacao_gaussiana(A_nova, b_nova, mostrar_passos=True)
             
-            # Verifica se os pontos estão igualmente espaçados
-            diferencas = np.diff(distancias_acum)
-            if np.allclose(diferencas, diferencas[0], rtol=0.01):
-                espacamento = diferencas[0]
-            else:
-                print("\nERRO: Os métodos requerem pontos igualmente espaçados!")
-                return
-        
-        print("\nInsira as profundidades:")
-        profundidades = []
-        for i in range(n_pontos):
-            prof = float(input(f"Profundidade no ponto {i} (m): "))
-            profundidades.append(prof)
-        profundidades = np.array(profundidades)
-    
-    # Cálculos
-    area_trapezio = regra_trapezio(profundidades, espacamento)
-    area_simpson = regra_simpson_1_3(profundidades, espacamento)
-    
-    # Resultados
-    imprimir_resultados(profundidades, distancias_acum, espacamento, 
-                       area_trapezio, area_simpson)
+            print("\n" + "="*80)
+            print("SOLUÇÃO FINAL - NOVO PROBLEMA")
+            print("="*80)
+            print("\nQuantidades a minerar de cada mina:")
+            for i, quantidade in enumerate(solucao_nova):
+                print(f"  Mina {i+1}: {quantidade:10.4f} m³")
+            
+            verificar_solucao(A_nova, b_nova, solucao_nova)
+            
+        except Exception as e:
+            print(f"\nErro ao resolver o sistema: {e}")
 
 if __name__ == "__main__":
     main()
-    
-    print("\n\nDeseja fazer outro cálculo? (s/n): ", end="")
-    resposta = input().strip().lower()
-    if resposta == 's':
-        print("\n")
-        main()
