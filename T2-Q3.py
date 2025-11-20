@@ -38,8 +38,8 @@ def matriz_questao():
     ], dtype=float)
 
 
-def gauss_sidel(matriz,row,col):
-    pr = float(input(print("Defina a precisão desejada para a operação: ")))
+def gauss_sidel(matriz, row, col, precision=0.0001):
+    pr = precision
 
     diff = np.zeros(col-1)
     k = np.zeros(col-1)

@@ -104,13 +104,10 @@ def escolher_pontos_centralizados(x_pontos, y_pontos, x_alvo, grau):
     if len(x_pontos) <= n_pontos:
         return x_pontos, y_pontos
     
-    # Calcula distâncias
     distancias = [abs(x - x_alvo) for x in x_pontos]
     
-    # Ordena índices por distância
     indices_ordenados = sorted(range(len(x_pontos)), key=lambda i: distancias[i])
     
-    # Pega os n_pontos mais próximos e ordena por x
     indices_selecionados = sorted(indices_ordenados[:n_pontos])
     
     x_selecionados = [x_pontos[i] for i in indices_selecionados]

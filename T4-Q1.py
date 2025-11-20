@@ -26,7 +26,6 @@ def regra_simpson_1_3(profundidades, espacamento, mostrar_aviso: bool = True):
             print("AVISO: Regra de Simpson 1/3 requer número ímpar de pontos.")
             print("Aplicando Simpson 1/3 até o penúltimo ponto e Trapézio no último intervalo.\n")
         
-        # Simpson 1/3 até n-2
         soma_impares = sum(profundidades[i] for i in range(1, n-2, 2))
         soma_pares = sum(profundidades[i] for i in range(2, n-2, 2))
         area_simpson = (espacamento / 3) * (
@@ -36,7 +35,6 @@ def regra_simpson_1_3(profundidades, espacamento, mostrar_aviso: bool = True):
             profundidades[n-2]
         )
         
-        # Trapézio no último intervalo
         area_trapezio = espacamento * (profundidades[n-2] + profundidades[n-1]) / 2
         
         return area_simpson + area_trapezio
@@ -88,28 +86,12 @@ def main():
     opcao = input("\nOpção: ").strip()
     
     if opcao == "1":
-        # Dados do exemplo da figura (conforme tabela fornecida)
-        # Ponto i | x_i (m) | Profundidade y_i (m)
-        #    0    |    0    |    0
-        #    1    |    2    |    1.8
-        #    2    |    4    |    2.0
-        #    3    |    6    |    4.0
-        #    4    |    8    |    4.0
-        #    5    |   10    |    6.0
-        #    6    |   12    |    4.0
-        #    7    |   14    |    3.6
-        #    8    |   16    |    3.4
-        #    9    |   18    |    2.8
-        #   10    |   20    |    0
-        
         distancias_acum = np.array([0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20])
         profundidades = np.array([0, 1.8, 2.0, 4.0, 4.0, 6.0, 4.0, 3.6, 3.4, 2.8, 0])
         
-        # Espaçamento uniforme de 2m
         espacamento = 2.0
         
     else:
-        # Entrada manual
         n_pontos = int(input("\nQuantidade de pontos medidos: "))
         
         print("\nOs pontos estão igualmente espaçados?")
@@ -128,7 +110,6 @@ def main():
                 distancias_acum.append(dist)
             distancias_acum = np.array(distancias_acum)
             
-            # Verifica se os pontos estão igualmente espaçados
             diferencas = np.diff(distancias_acum)
             if np.allclose(diferencas, diferencas[0], rtol=0.01):
                 espacamento = diferencas[0]
@@ -143,11 +124,9 @@ def main():
             profundidades.append(prof)
         profundidades = np.array(profundidades)
     
-    # Cálculos
     area_trapezio = regra_trapezio(profundidades, espacamento)
     area_simpson = regra_simpson_1_3(profundidades, espacamento)
     
-    # Resultados
     imprimir_resultados(profundidades, distancias_acum, espacamento, 
                        area_trapezio, area_simpson)
 

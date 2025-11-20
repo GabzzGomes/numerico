@@ -2,7 +2,6 @@ import numpy as np
 from typing import List, Tuple
 
 def imprimir_matriz(matriz: np.ndarray, nome: str = "Matriz"):
-    """Imprime a matriz de forma formatada sem notação científica."""
     print(f"\n{nome}:")
     print("-" * 80)
     linhas, colunas = matriz.shape
@@ -10,7 +9,7 @@ def imprimir_matriz(matriz: np.ndarray, nome: str = "Matriz"):
         linha_str = "| "
         for j in range(colunas):
             valor = matriz[i, j]
-            if abs(valor) < 1e-10:  # Considera valores muito pequenos como zero
+            if abs(valor) < 1e-10:
                 valor = 0.0
             linha_str += f"{valor:10.4f} "
         linha_str += "|"
@@ -30,7 +29,6 @@ def eliminacao_gaussiana(A: np.ndarray, b: np.ndarray, mostrar_passos: bool = Tr
         Vetor solução x
     """
     n = len(b)
-    # Cria matriz aumentada [A|b]
     Ab = np.column_stack([A.astype(float), b.astype(float)])
     
     if mostrar_passos:
@@ -39,9 +37,7 @@ def eliminacao_gaussiana(A: np.ndarray, b: np.ndarray, mostrar_passos: bool = Tr
         print("="*80)
         imprimir_matriz(Ab, "Matriz Aumentada Inicial [A|b]")
     
-    # Fase de eliminação
     for k in range(n-1):
-        # Pivoteamento parcial
         max_idx = k
         for i in range(k+1, n):
             if abs(Ab[i, k]) > abs(Ab[max_idx, k]):
@@ -53,7 +49,6 @@ def eliminacao_gaussiana(A: np.ndarray, b: np.ndarray, mostrar_passos: bool = Tr
                 print(f"\nTroca de linhas {k+1} ↔ {max_idx+1} (pivoteamento)")
                 imprimir_matriz(Ab, f"Após pivoteamento na etapa {k+1}")
         
-        # Eliminação
         for i in range(k+1, n):
             if Ab[k, k] != 0:
                 fator = Ab[i, k] / Ab[k, k]
@@ -68,7 +63,6 @@ def eliminacao_gaussiana(A: np.ndarray, b: np.ndarray, mostrar_passos: bool = Tr
     if mostrar_passos:
         imprimir_matriz(Ab, "Matriz Triangular Superior Final")
     
-    # Substituição retroativa
     x = np.zeros(n)
     
     if mostrar_passos:
@@ -102,9 +96,8 @@ def criar_sistema_mineracao(necessidades: List[float], composicao: List[List[flo
     Returns:
         Tupla (A, b) onde A é a matriz de coeficientes e b o vetor de necessidades
     """
-    # Converte porcentagens para frações
     A = np.array(composicao) / 100.0
-    A = A.T  # Transpõe para ter materiais nas linhas e minas nas colunas
+    A = A.T
     b = np.array(necessidades)
     
     return A, b
@@ -129,13 +122,12 @@ def main():
     print("Método: Eliminação Gaussiana")
     print("="*80)
     
-    # Dados do problema original
     print("\n--- PROBLEMA ORIGINAL ---")
-    necessidades_original = [4800, 5800, 5700]  # areia, cascalho fino, cascalho grosso
+    necessidades_original = [4800, 5800, 5700]
     composicao_original = [
-        [55, 30, 15],  # Mina 1: %areia, %cascalho_fino, %cascalho_grosso
-        [25, 45, 30],  # Mina 2
-        [25, 20, 55]   # Mina 3
+        [55, 30, 15],
+        [25, 45, 30],
+        [25, 20, 55]
     ]
     
     print("\nNecessidades do engenheiro:")
@@ -148,7 +140,6 @@ def main():
     for i, comp in enumerate(composicao_original):
         print(f"Mina {i+1}:  {comp[0]:3d}%    {comp[1]:3d}%      {comp[2]:3d}%")
     
-    # Resolver problema original
     A, b = criar_sistema_mineracao(necessidades_original, composicao_original)
     
     print("\n\nSISTEMA DE EQUAÇÕES LINEARES:")
@@ -174,7 +165,6 @@ def main():
     except Exception as e:
         print(f"\nErro ao resolver o sistema: {e}")
     
-    # Opção para resolver novo problema
     print("\n" + "="*80)
     print("RESOLVER NOVO PROBLEMA")
     print("="*80)
@@ -184,14 +174,12 @@ def main():
     if resposta == 's':
         print("\n--- ENTRADA DE NOVOS DADOS ---")
         
-        # Entrada de necessidades
         print("\nDigite as necessidades (em m³):")
         areia = float(input("  Areia: "))
         cfino = float(input("  Cascalho Fino: "))
         cgrosso = float(input("  Cascalho Grosso: "))
         necessidades_nova = [areia, cfino, cgrosso]
         
-        # Entrada de composições
         print("\nDigite a composição de cada mina (em %):")
         composicao_nova = []
         for i in range(3):
@@ -201,7 +189,6 @@ def main():
             cgrosso_p = float(input("  % Cascalho Grosso: "))
             composicao_nova.append([areia_p, cfino_p, cgrosso_p])
         
-        # Resolver novo problema
         A_nova, b_nova = criar_sistema_mineracao(necessidades_nova, composicao_nova)
         
         print("\n\nNOVO SISTEMA DE EQUAÇÕES:")

@@ -3,11 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Sequence, Tuple
 
+import importlib
 import numpy as np
 
-import Q1
-import Q2
-import Q3
+Q1 = importlib.import_module("T1-Q3")
+Q2 = importlib.import_module("T3-Q2")
+Q3 = importlib.import_module("T4-Q1")
+Circuit = importlib.import_module("T2-Q3")
 
 
 @dataclass
@@ -35,6 +37,13 @@ class Q3Result:
     area_simpson: float
     diferenca: float
     diferenca_percentual: float
+
+
+@dataclass
+class CircuitResult:
+    correntes: np.ndarray
+    matriz: np.ndarray
+    termos_independentes: np.ndarray
 
 
 def solve_q1(necessidades: Sequence[float], composicao: Sequence[Sequence[float]]) -> Q1Result:
@@ -107,7 +116,7 @@ def solve_q3(
     if distancias is None:
         distancias = [i * espacamento for i in range(len(profundidades))]
     else:
-        _ = _infer_espacamento(distancias)  # valida
+        _ = _infer_espacamento(distancias)
 
     profundidade_arr = np.array(profundidades, dtype=float)
     area_trap = Q3.regra_trapezio(profundidade_arr, float(espacamento))
@@ -123,4 +132,24 @@ def solve_q3(
         area_simpson=float(area_simp),
         diferenca=float(diferenca),
         diferenca_percentual=float(diferenca_percentual),
+    )
+
+
+def solve_circuit(
+    matriz: Sequence[Sequence[float]],
+    precision: float = 0.0001,
+) -> CircuitResult:
+    """Resolve o circuito usando Gauss-Seidel."""
+    matriz_np = np.array(matriz, dtype=float)
+    rows, cols = matriz_np.shape
+
+    solucao = Circuit.gauss_sidel(matriz_np, rows, cols, precision=precision)
+
+    A = matriz_np[:, :-1]
+    b = matriz_np[:, -1]
+
+    return CircuitResult(
+        correntes=solucao,
+        matriz=A,
+        termos_independentes=b,
     )
